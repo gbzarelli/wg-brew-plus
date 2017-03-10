@@ -192,10 +192,6 @@ void processBtPress(int btPress) {
       break;
 
 /*=============================================*/
-  int tempFervura;
-  int tempoMin;
-  int qtdLupulo;
-  int lupulo[10];
 /*=============menu conf. fervura==============*/
     case M_CONF_FERVURA:
         if(btPress==PIN_BT_ENTER){
