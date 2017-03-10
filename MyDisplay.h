@@ -11,6 +11,10 @@ void updateMenuPrincipal(int index);
 void updateConfBrassagemPreAquec(int temp);
 void updateConfBrassagemQtdRampas(int qtd);
 void updateConfBrassagemRampas(int pos,int tipo, int valor);
+void updateConfFervuraQtdLupulo(int qtd);
+void updateConfFervuraLupulo(int pos, int valor);
+void updateConfFervuraDuracao(int qtd);
+void updateConfFervuraTemp(int temp);
 
 void setupDisplay(){
   // Inicializa LCD
