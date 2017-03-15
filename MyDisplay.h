@@ -13,8 +13,12 @@ void updateConfBrassagemQtdRampas(int qtd);
 void updateConfBrassagemRampas(int pos,int tipo, int valor);
 void updateConfFervuraQtdLupulo(int qtd);
 void updateConfFervuraLupulo(int pos, int valor);
-void updateConfFervuraDuracao(int qtd);
+void updateConfFervuraDuration(int qtd);
 void updateConfFervuraTemp(int temp);
+void updatePreAquecBrassagem(int temp, int tempDesired);
+void printTemp(int temp);
+void updateWaitConfirmFerv();
+void updateRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int tempoSec);
 
 void setupDisplay(){
   // Inicializa LCD
@@ -51,13 +55,7 @@ void updateConfBrassagemPreAquec(int temp){
   lcd.setCursor(0, 0);
   lcd.print("PRE AQUECIMENTO:");
   lcd.setCursor(0, 1);
-  lcd.print(temp);
-  #if ARDUINO >= 100
-    lcd.write((byte)0);
-  #else
-    lcd.print(0, BYTE);
-  #endif
-    lcd.print("C");
+  printTemp(temp);
 }
 
 /**
@@ -99,18 +97,12 @@ void updateConfFervuraTemp(int temp){
   lcd.setCursor(0, 0);
   lcd.print("TEMP P/I FERVURA:");
   lcd.setCursor(0, 1);
-  lcd.print(temp);
-  #if ARDUINO >= 100
-    lcd.write((byte)0);
-  #else
-    lcd.print(0, BYTE);
-  #endif
-    lcd.print("C");
+  printTemp(temp);
 }
 /**
  * Exibe duracao de fervura
  */
-void updateConfFervuraDuracao(int qtd){
+void updateConfFervuraDuration(int qtd){
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("DURACAO DA FERVURA:");
@@ -140,5 +132,77 @@ void updateConfFervuraLupulo(int pos, int valor){
   lcd.print("CONF. LUPULO "+(pos+1));
   lcd.setCursor(0, 1);
   lcd.print("TEMPO(MIN): "+valor);
+}
+
+/**
+ * Atualiza a temperatura de pre aquecimento da brassagem
+ * e exibe a temperatura desejada.
+ */
+void updatePreAquecBrassagem(int temp, int tempDesired){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("PRE AQUECIMENTO");
+  lcd.setCursor(0, 1);
+  lcd.print("A:");
+  printTemp(temp);
+  lcd.print(" D:");
+  printTemp(tempDesired);  
+}
+
+/**
+ * Aguarda pressionar o botao para iniciar a fervura;
+ */
+void updateWaitConfirmFerv(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("INICIAR FERVURA");
+  lcd.setCursor(0, 1);
+  lcd.print("PRESS. ENTER");
+}
+
+/**
+     -0123456789012345-
+     |R:10/10  T:10ºC |
+     |10:39    A:20ºC |
+    
+     -0123456789012345-
+     |R:2/5    T:10ºC |
+     |Wait...  A:20ºC |
+ */
+ 
+void updateRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int tempoSec){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  String l1 = "R:" + String(rampa) + "/" + maxRampa;
+  lcd.print(l1);
+  lcd.setCursor(9, 0);
+  lcd.print("T:");
+  printTemp(tempRampa);
+  lcd.setCursor(0, 1);
+  String l2;
+  if(start){
+    int m=tempoSec/60;
+    int s=tempoSec%60;
+    l2 = (m<10?"0"+String(m):m) + ":" + (s<10?"0"+String(s):s);
+  }else{
+    l2 = "WAIT...";
+  }
+  lcd.print(l2);
+  lcd.setCursor(9, 1);
+  lcd.print("A:");
+  printTemp(currentTemp);
+}
+
+/**
+ * Mostra a temperatura passada com o simbolo ex: '20ºC'
+ */
+void printTemp(int temp){
+    lcd.print(temp);
+  #if ARDUINO >= 100
+    lcd.write((byte)0);
+  #else
+    lcd.print(0, BYTE);
+  #endif
+    lcd.print("C");
 }
 

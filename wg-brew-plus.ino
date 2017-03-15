@@ -20,11 +20,18 @@ const int PIN_BT_ADD = 14;
 const int PIN_BT_SUB = 15;
 
 //Constantes utilizadas na configuração da brassagem e fervura
-const int ETAPA_CONF_TEMP_FERV=0;
-const int ETAPA_CONF_DURC_FERV=1;
-const int ETAPA_CONF_QTD_LUPULO=2;
-const int ETAPA_CONF_TEMP_PREAQC_BRASS=0;
-const int ETAPA_CONF_QTD_RAMPAS=1;
+const int ETAPA_CONF_TEMP_FERV = 0;
+const int ETAPA_CONF_DURC_FERV = 1;
+const int ETAPA_CONF_QTD_LUPULO = 2;
+const int ETAPA_CONF_TEMP_PREAQC_BRASS = 0;
+const int ETAPA_CONF_QTD_RAMPAS = 1;
+
+//Constantes para processo de brassagem e fervura (execucao)
+const int ETAPA_BRASS_PREAQUEC=0;
+const int ETAPA_RAMPAS=1;
+const int ETAPA_WAIT_CONFIRM_FERV=2;
+const int ETAPA_FERVER=3;
+const int ETAPA_FERVURA_LUP=4;
 
 //Variaveis de controle
 int ups = 0;//controla o ups (update por segundo) de atualização da tela.
@@ -33,13 +40,14 @@ int etapa = 0;
 int sec = 0;//controle de segundos.
 int indexTmp = 0;//indice temporario.(utilizado em qualquer rotina)
 int menuSelectTmp;//controle de qual item do menu foi selecionado.
+boolean startTimer;//controle para definir o inicio do timer;
 
 //*************************************************************
 // Estrutura de configuração das etapas de brassagem e fervura
 struct config_brassagem {
   int tempPreAquec;
   int qtdRampas;
-  int rampas[10][2];
+  int rampas[10][2];//[0,0]=temp;[0,1]=durac
 };
 
 struct config_fervura {
@@ -74,20 +82,20 @@ void setup() {
   // Aguarda estabilização.
   delay(5000);
   updateMenuPrincipal(0);
-  
-  brassagem.tempPreAquec=50;
-  brassagem.qtdRampas=10;
-  for(int i = 0 ; i < 10; i++){
-    for(int b = 0; b < 2; b++){
-      brassagem.rampas[i][b]=0;
+
+  brassagem.tempPreAquec = 50;
+  brassagem.qtdRampas = 10;
+  for (int i = 0 ; i < 10; i++) {
+    for (int b = 0; b < 2; b++) {
+      brassagem.rampas[i][b] = 0;
     }
   }
-  
-  fervura.tempFervura=100;
-  fervura.duracaoMin=60;
-  fervura.qtdLupulo=5;
-  for(int i = 0 ; i < 10; i++){
-      fervura.lupulo[i]=0;
+
+  fervura.tempFervura = 100;
+  fervura.duracaoMin = 60;
+  fervura.qtdLupulo = 5;
+  for (int i = 0 ; i < 10; i++) {
+    fervura.lupulo[i] = 0;
   }
 }
 
@@ -119,7 +127,7 @@ void loop() {
   if (btPressed != -1) {
     processBtPress(btPressed);
   }
-  
+
   if (menu == M_BRASSAGEM) {
     processBrassagem();
   } else if (menu == M_FERVURA) {
@@ -129,9 +137,68 @@ void loop() {
   refreshUPS();
 }
 
-void processBrassagem() {
 
+void processBrassagem() {
+  int temperature;
+  int duration;
+  
+  switch(etapa){
+    //**********************************
+    case ETAPA_BRASS_PREAQUEC:
+      if(getThermoC() < brassagem.tempPreAquec){
+        refreshResistence(brassagem.tempPreAquec);
+      }else{
+        startTimer=false;
+        etapa=ETAPA_RAMPAS;
+        indexTmp=0;
+      }
+      updatePreAquecBrassagem((int)getThermoC(),brassagem.tempPreAquec);
+    break;
+
+    //**********************************
+    case ETAPA_RAMPAS:
+      temperature = brassagem.rampas[indexTmp][0];
+      duration = brassagem.rampas[indexTmp][1] * 60;
+     
+      //se o chronometro nao foi iniciado e a temperatura chegou no nivel da rampa,
+      //inicia o chronometro;
+      if(!startTimer && getThermoC() >= temperature) {
+        startTimer=true;
+        sec=0;
+      }
+      
+      if(startTimer && sec >= duration){
+        //Verifica se ainda existe rampas configuradas:
+        if(indexTmp < brassagem.qtdRampas){
+          indexTmp++;//Se existir incrementa;
+          startTimer=false;//para chrono para atingir temperatura da prox rampa;
+        }else{
+          indexTmp=0;
+          etapa = ETAPA_WAIT_CONFIRM_FERV;
+        }
+        break;
+      }
+
+      //Se o timer já iniciou comeca a decrementar o tempo da rampa
+      //para exibição.
+      if(startTimer){
+        duration = duration - sec;
+      }
+
+      updateRampa(startTimer, (indexTmp+1), brassagem.qtdRampas,getThermoC(), temperature, duration);
+      refreshResistence(temperature);
+      
+      break;
+
+    //************************************************************
+    //******AGUARDANDO CONFIRMACAO PARA INICIO DE FERCURA**********
+    case ETAPA_WAIT_CONFIRM_FERV:
+      turnOffResistence();//DESLIGA RESISTENCIA
+      updateWaitConfirmFerv();
+    break;
+  }
 }
+
 void processFervura() {
 
 }
@@ -149,127 +216,130 @@ void processFervura() {
 */
 void processBtPress(int btPress) {
   switch (menu) {
-/*=============================================*/
-/*=============menu principal==================*/
+    /*=============================================*/
+    /*=============menu principal==================*/
     case M_PRINCIPAL:
-         switch(btPress){
-           case PIN_BT_ENTER:
-              indexTmp=0;
-              if (indexTmp == 0) {
-                etapa = ETAPA_CONF_TEMP_PREAQC_BRASS;
-                menu = M_CONF_BRASSAGEM;
-              } else {
-                etapa = ETAPA_CONF_TEMP_FERV;
-                menu = M_CONF_FERVURA;
-              }
-              menuSelectTmp = menu;
-           break;
-           
-           case PIN_BT_ADD:
-              indexTmp = 0;
-           break;
-           
-           case PIN_BT_SUB:
-              indexTmp = 1;
-           break;
-         }
-        updateMenuPrincipal(indexTmp);
-      break;
-/*=============================================*/
-/*=============menu conf. brassagem============*/
-    case M_CONF_BRASSAGEM:
-        if(btPress==PIN_BT_ENTER){
-            if(etapa==(brassagem.qtdRampas * 2 + 2 )){//quantidade de rampas*2(temp+time) + 2(aquec+qtdRampas);
-              etapa=ETAPA_CONF_TEMP_FERV;
-              menu=M_CONF_FERVURA;
-            }else{
-              etapa++;
-            }
-        }else{
-          int x;
-          if(btPress==PIN_BT_ADD){
-            x=1;
-          }else if(btPress==PIN_BT_SUB){
-            x=-1;
-          }  
-          if(etapa==ETAPA_CONF_TEMP_PREAQC_BRASS){
-            brassagem.tempPreAquec = brassagem.tempPreAquec + x;
-            updateConfBrassagemPreAquec(brassagem.tempPreAquec);
-          }else if(etapa==ETAPA_CONF_QTD_RAMPAS){
-            brassagem.qtdRampas = brassagem.qtdRampas + x;
-            updateConfBrassagemQtdRampas(brassagem.qtdRampas);
-          }else{
-            //definicao da posicao na matriz [y][ps]
-            float y = etapa/2.0 - 1;
-            int ps=0;if(x%1>0)ps=1;            
-            brassagem.rampas[(int)y][ps] = brassagem.rampas[(int)y][ps]+x;
-            //y para 'n' da rampa; ps=0 para temperatura, ps=1 para tempo; valor;
-            updateConfBrassagemRampas((int)y,ps,brassagem.rampas[(int)y][ps]);
+      switch (btPress) {
+        case PIN_BT_ENTER:
+          indexTmp = 0;
+          if (indexTmp == 0) {
+            etapa = ETAPA_CONF_TEMP_PREAQC_BRASS;
+            menu = M_CONF_BRASSAGEM;
+          } else {
+            etapa = ETAPA_CONF_TEMP_FERV;
+            menu = M_CONF_FERVURA;
           }
+          menuSelectTmp = menu;
+          break;
+
+        case PIN_BT_ADD:
+          indexTmp = 0;
+          break;
+
+        case PIN_BT_SUB:
+          indexTmp = 1;
+          break;
+      }
+      updateMenuPrincipal(indexTmp);
+      break;
+    /*=============================================*/
+    /*=============menu conf. brassagem============*/
+    case M_CONF_BRASSAGEM:
+      if (btPress == PIN_BT_ENTER) {
+        if (etapa == (brassagem.qtdRampas * 2 + 2 )) { //quantidade de rampas*2(temp+time) + 2(aquec+qtdRampas);
+          etapa = ETAPA_CONF_TEMP_FERV;
+          menu = M_CONF_FERVURA;
+        } else {
+          etapa++;
         }
+      } else {
+        int x;
+        if (btPress == PIN_BT_ADD) {
+          x = 1;
+        } else if (btPress == PIN_BT_SUB) {
+          x = -1;
+        }
+        if (etapa == ETAPA_CONF_TEMP_PREAQC_BRASS) {
+          brassagem.tempPreAquec = brassagem.tempPreAquec + x;
+          updateConfBrassagemPreAquec(brassagem.tempPreAquec);
+        } else if (etapa == ETAPA_CONF_QTD_RAMPAS) {
+          brassagem.qtdRampas = brassagem.qtdRampas + x;
+          updateConfBrassagemQtdRampas(brassagem.qtdRampas);
+        } else {
+          //definicao da posicao na matriz [y][ps]
+          float y = etapa / 2.0 - 1;
+          int ps = 0; if (x % 1 > 0)ps = 1;
+          brassagem.rampas[(int)y][ps] = brassagem.rampas[(int)y][ps] + x;
+          //y para 'n' da rampa; ps=0 para temperatura, ps=1 para tempo; valor;
+          updateConfBrassagemRampas((int)y, ps, brassagem.rampas[(int)y][ps]);
+        }
+      }
       break;
 
-/*=============================================*/
-/*=============menu conf. fervura==============*/
+    /*=============================================*/
+    /*=============menu conf. fervura==============*/
     case M_CONF_FERVURA:
-        if(btPress==PIN_BT_ENTER){
-            if(etapa==(fervura.qtdLupulo + 3 )){//quantidade de lupulos + 3(temp+tempo+qtd);
-              etapa=0;
-              if(menuSelectTmp==M_CONF_BRASSAGEM){//se selecionou no menu conf.Brassagem vai para etapa de brass.
-                menu=M_BRASSAGEM;  
-              }else{// se selecionou no menu conf.fervura vai direto para ferv.
-                menu=M_FERVURA;
-              }
-            }else{
-              etapa++;
-            }
-        }else{
-          int x;
-          if(btPress==PIN_BT_ADD){
-            x=1;
-          }else if(btPress==PIN_BT_SUB){
-            x=-1;
-          }  
-          if(etapa==ETAPA_CONF_TEMP_FERV){
-            fervura.tempFervura += fervura.tempFervura + x;
-            updateConfFervuraTemp(fervura.tempFervura);
-          }else if(etapa==ETAPA_CONF_DURC_FERV){
-            fervura.duracaoMin = fervura.duracaoMin + x;
-            updateConfFervuraDuracao(fervura.duracaoMin);
-          }else if(etapa==ETAPA_CONF_QTD_LUPULO){
-            fervura.qtdLupulo = fervura.qtdLupulo + x;
-            updateConfFervuraQtdLupulo(fervura.qtdLupulo);
-          }else{
-            fervura.lupulo[etapa-2] = fervura.lupulo[etapa-2] + x;
-            updateConfFervuraLupulo(etapa-2,fervura.lupulo[etapa-2]);
+      if (btPress == PIN_BT_ENTER) {
+        if (etapa == (fervura.qtdLupulo + 3 )) { //quantidade de lupulos + 3(temp+tempo+qtd);
+          etapa = 0;
+          if (menuSelectTmp == M_CONF_BRASSAGEM) { //se selecionou no menu conf.Brassagem vai para etapa de brass.
+            menu = M_BRASSAGEM;
+          } else { // se selecionou no menu conf.fervura vai direto para ferv.
+            menu = M_FERVURA;
           }
+        } else {
+          etapa++;
         }
+      } else {
+        int x;
+        if (btPress == PIN_BT_ADD) {
+          x = 1;
+        } else if (btPress == PIN_BT_SUB) {
+          x = -1;
+        }
+        if (etapa == ETAPA_CONF_TEMP_FERV) {
+          fervura.tempFervura += fervura.tempFervura + x;
+          updateConfFervuraTemp(fervura.tempFervura);
+        } else if (etapa == ETAPA_CONF_DURC_FERV) {
+          fervura.duracaoMin = fervura.duracaoMin + x;
+          updateConfFervuraDuration(fervura.duracaoMin);
+        } else if (etapa == ETAPA_CONF_QTD_LUPULO) {
+          fervura.qtdLupulo = fervura.qtdLupulo + x;
+          updateConfFervuraQtdLupulo(fervura.qtdLupulo);
+        } else {
+          fervura.lupulo[etapa - 2] = fervura.lupulo[etapa - 2] + x;
+          updateConfFervuraLupulo(etapa - 2, fervura.lupulo[etapa - 2]);
+        }
+      }
       break;
-/*=============================================*/
-/*=============proc. brassagem=================*/
-     case M_BRASSAGEM:
-       switch(btPress){
-         case PIN_BT_ENTER:
-         break;
-         case PIN_BT_ADD:
-         break;
-         case PIN_BT_SUB:
-         break;
-       }
-/*=============================================*/
-/*=============proc. fervura===================*/
-    break;
-     case M_FERVURA:
-       switch(btPress){
-         case PIN_BT_ENTER:
-         break;
-         case PIN_BT_ADD:
-         break;
-         case PIN_BT_SUB:
-         break;
-       }
-    break;
-    
+    /*=============================================*/
+    /*=============proc. brassagem=================*/
+    case M_BRASSAGEM:
+      switch (btPress) {
+        case PIN_BT_ENTER:
+          if(etapa==ETAPA_WAIT_CONFIRM_FERV){
+            menu=M_FERVURA;
+          }
+          break;
+        case PIN_BT_ADD:
+          break;
+        case PIN_BT_SUB:
+          break;
+      }
+      /*=============================================*/
+      /*=============proc. fervura===================*/
+      break;
+    case M_FERVURA:
+      switch (btPress) {
+        case PIN_BT_ENTER:
+          break;
+        case PIN_BT_ADD:
+          break;
+        case PIN_BT_SUB:
+          break;
+      }
+      break;
+
   }
 }
 
