@@ -1,16 +1,15 @@
 //temperatura de chaveamento em Cº
 const int SWITCH_TEMP_VARIABLE = 2;
 
-int thermoDO = 4;
-int thermoCS = 5;
-int thermoCLK = 6;
+const int PIN_THERMO_DO=4;
+const int PIN_THERMO_CS=5;
+const int PIN_THERMO_CLK=6;
 
-int vccPin = 3;
-int gndPin = 2;
+const int PIN_RESISTENCE = 17;
 
-int PIN_RESISTENCE = 17;
+//int vccPin = 3;int gndPin = 2;
 
-MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
+MAX6675 thermocouple(PIN_THERMO_CLK, PIN_THERMO_CS, PIN_THERMO_DO);
 
 void setupSensors();
 void refreshResistence(int tempDesired);
@@ -18,8 +17,7 @@ double getThermoC();
 
 void setupSensors() {
   // Configuração de pinos arduino
-  pinMode(vccPin, OUTPUT); digitalWrite(vccPin, HIGH);
-  pinMode(gndPin, OUTPUT); digitalWrite(gndPin, LOW);
+  //pinMode(vccPin, OUTPUT); digitalWrite(vccPin, HIGH);pinMode(gndPin, OUTPUT); digitalWrite(gndPin, LOW);
   pinMode(PIN_RESISTENCE, OUTPUT);
 }
 
