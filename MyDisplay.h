@@ -19,9 +19,9 @@ void updatePreAquecBrassagem(int temp, int tempDesired);
 void printTemp(int temp);
 void updateWaitConfirmFerv();
 void updateRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int timeSec);
-void updatePreAquecFervura(temp,tempDesired);
+void updatePreAquecFervura(int temp, int tempDesired);
 void updateWaitConfirmEnd();
-void updateFervura(currentTemp,tempFervura,lupulo,maxLupulo, timeSec);
+void updateFervura(int currentTemp,int tempFervura,int lupulo, int maxLupulo, int timeSec);
 
 void setupDisplay(){
   // Inicializa LCD
@@ -196,7 +196,7 @@ void updateRampa(boolean start, int rampa,int maxRampa, int currentTemp,int temp
   printTemp(currentTemp);
 }
 
-void updatePreAquecFervura(temp,tempDesired){
+void updatePreAquecFervura(int temp, int tempDesired){
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("FERVENDO...");
@@ -220,7 +220,7 @@ void updateWaitConfirmEnd(){
      |L:10/10  T:10ºC |
      |10:39    A:20ºC |
 */
-void updateFervura(currentTemp,tempFervura,lupulo,maxLupulo, timeSec){
+void updateFervura(int currentTemp,int tempFervura,int lupulo, int maxLupulo, int timeSec){
   lcd.clear();
   lcd.setCursor(0, 0);
   String l1 = "L:" + String(lupulo) + "/" + maxLupulo;

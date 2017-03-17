@@ -204,7 +204,8 @@ void processBrassagem() {
 }
 
 void processFervura() {
-    int alarmTime=-1;
+    int alarmTimeStart=-1;
+    int alarmTimeEnd=-1;
     switch(etapa){
       //**********************************
       case ETAPA_PREAQUEC:
@@ -243,10 +244,9 @@ void processFervura() {
       case ETAPA_WAIT_CONFIRM_END:
         turnOffResistence();//DESLIGA RESISTENCIA
         updateWaitConfirmEnd();
-        return;
-      break;
+      return;
     }
-    refreshResistence(brassagem.tempFervura);
+    refreshResistence(fervura.tempFervura);
 }
 
 /**
