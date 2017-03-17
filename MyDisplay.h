@@ -18,7 +18,10 @@ void updateConfFervuraTemp(int temp);
 void updatePreAquecBrassagem(int temp, int tempDesired);
 void printTemp(int temp);
 void updateWaitConfirmFerv();
-void updateRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int tempoSec);
+void updateRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int timeSec);
+void updatePreAquecFervura(temp,tempDesired);
+void updateWaitConfirmEnd();
+void updateFervura(currentTemp,tempFervura,lupulo,maxLupulo, timeSec);
 
 void setupDisplay(){
   // Inicializa LCD
@@ -170,7 +173,7 @@ void updateWaitConfirmFerv(){
      |Wait...  A:20ºC |
  */
  
-void updateRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int tempoSec){
+void updateRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int timeSec){
   lcd.clear();
   lcd.setCursor(0, 0);
   String l1 = "R:" + String(rampa) + "/" + maxRampa;
@@ -181,12 +184,55 @@ void updateRampa(boolean start, int rampa,int maxRampa, int currentTemp,int temp
   lcd.setCursor(0, 1);
   String l2;
   if(start){
-    int m=tempoSec/60;
-    int s=tempoSec%60;
+    int m=timeSec/60;
+    int s=timeSec%60;
     l2 = (m<10?"0"+String(m):m) + ":" + (s<10?"0"+String(s):s);
   }else{
     l2 = "WAIT...";
   }
+  lcd.print(l2);
+  lcd.setCursor(9, 1);
+  lcd.print("A:");
+  printTemp(currentTemp);
+}
+
+void updatePreAquecFervura(temp,tempDesired){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("FERVENDO...");
+  lcd.setCursor(0, 1);
+  lcd.print("A:");
+  printTemp(temp);
+  lcd.print(" D:");
+  printTemp(tempDesired);  
+}
+
+void updateWaitConfirmEnd(){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("FIM DA FERVURA");
+  lcd.setCursor(0, 1);
+  lcd.print("PRESS. ENTER");
+}
+
+/**
+     -0123456789012345-
+     |L:10/10  T:10ºC |
+     |10:39    A:20ºC |
+*/
+void updateFervura(currentTemp,tempFervura,lupulo,maxLupulo, timeSec){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  String l1 = "L:" + String(lupulo) + "/" + maxLupulo;
+  lcd.print(l1);
+  lcd.setCursor(9, 0);
+  lcd.print("T:");
+  printTemp(tempFervura);
+  lcd.setCursor(0, 1);
+  String l2;
+  int m=timeSec/60;
+  int s=timeSec%60;
+  l2 = (m<10?"0"+String(m):m) + ":" + (s<10?"0"+String(s):s);
   lcd.print(l2);
   lcd.setCursor(9, 1);
   lcd.print("A:");
