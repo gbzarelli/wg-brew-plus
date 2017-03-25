@@ -1,8 +1,9 @@
 #include <Wire.h>
 #include "MyDisplay.h"
 #include "MySensors.h"
-#include "UPS.h"
-#include "MyButtons.h"
+
+//Delay de cada fim de ciclo do loop()
+const int DELAY = 100;
 
 //Constantes que define a tela atual a ser exibida.
 const int M_PRINCIPAL = 0;
@@ -10,6 +11,12 @@ const int M_CONF_BRASSAGEM = 1;
 const int M_CONF_FERVURA = 2;
 const int M_BRASSAGEM = 3;
 const int M_FERVURA = 4;
+
+//Constantes utilizadas para definir pino dos botoes
+//e tambem define o botao que foi pressionado.
+const int PIN_BT_ENTER = 10;
+const int PIN_BT_ADD = 9;
+const int PIN_BT_SUB = 8;
 
 //Constantes utilizadas na configuração da brassagem e fervura
 const int ETAPA_CONF_TEMP_FERV = 0;
@@ -30,8 +37,10 @@ const int ETAPA_WAIT_CONFIRM_END=5;
 const int SEC_ALARM_LUPULO = 5;//duração do alarme do lupulo
 
 //Variaveis de controle
+int ups = 0;//controla o ups (update por segundo) de atualização da tela.
 int menu = 0;
 int etapa = 0;
+int sec = 0;//controle de segundos.
 int indexTmp = 0;//indice temporario.(utilizado em qualquer rotina)
 int menuSelectTmp;//controle de qual item do menu foi selecionado.
 boolean startTimer;//controle para definir o inicio do timer;
@@ -55,7 +64,16 @@ struct config_fervura fervura;
 struct config_brassagem brassagem;
 //*************************************************************
 
+//Variaveis de controle de botoes pressionados
+int tmpBtPress = -1;
+boolean tmpBtPressState = false;
+
+// Variavel para controle de tempo UPS;
+unsigned long time;
+
 // Metodos
+int getBtPress();
+void refreshUPS();
 void processBtPress(int btPress);
 void processBrassagem();
 void processFervura();
@@ -64,9 +82,8 @@ void setup() {
   Serial.begin(9600);
   setupDisplay();
   setupSensors();
-  setupBuzzer();
-  setupButtons();
-  
+  // Aguarda estabilização.
+  delay(5000);
   updateMenuPrincipal(0);
 
   brassagem.tempPreAquec = 50;
@@ -106,10 +123,10 @@ void setup() {
 
 */
 void loop() {
-  startLoop();
+  time = millis();
 
   int btPressed = getBtPress();
-  
+
   if (btPressed != -1) {
     processBtPress(btPressed);
   }
@@ -120,7 +137,7 @@ void loop() {
     processFervura();
   }
 
-  endLoop();
+  refreshUPS();
 }
 
 void processBrassagem() {
@@ -148,7 +165,6 @@ void processBrassagem() {
       //se o chronometro nao foi iniciado e a temperatura chegou no nivel da rampa,
       //inicia o chronometro;
       if(!startTimer && getThermoC() >= temperature) {
-        beepAlarmeStartAsync();
         startTimer=true;
         sec=0;
       }
@@ -156,7 +172,6 @@ void processBrassagem() {
       if(startTimer && sec >= duration){
         //Verifica se ainda existe rampas configuradas:
         if(indexTmp < brassagem.qtdRampas){
-          beepAlarmeRampaAsync();
           indexTmp++;//Se existir incrementa;
         }else{
           indexTmp=0;
@@ -180,23 +195,20 @@ void processBrassagem() {
     //************************************************************
     //******AGUARDANDO CONFIRMACAO PARA INICIO DE FERCURA**********
     case ETAPA_WAIT_CONFIRM_FERV:
-      beepWaitConfirm();
-      if(indexTmp++==0){
-        turnOffResistence();//DESLIGA RESISTENCIA
-        updateWaitConfirmFerv();
-      }
+      turnOffResistence();//DESLIGA RESISTENCIA
+      updateWaitConfirmFerv();
     break;
   }
 
 }
 
 void processFervura() {
-  
+    int alarmTimeStart=-1;
+    int alarmTimeEnd=-1;
     switch(etapa){
       //**********************************
       case ETAPA_PREAQUEC:
         if(getThermoC() >= fervura.tempFervura){
-          beepAlarmeStartAsync();
           sec=0;
           indexTmp=0;
           etapa=ETAPA_FERVURA_LUP;
@@ -206,6 +218,8 @@ void processFervura() {
       
       //**********************************
       case ETAPA_FERVURA_LUP:
+        alarmTimeStart = fervura.lupulo[indexTmp] * 60;
+        alarmTimeEnd = alarmTimeStart + SEC_ALARM_LUPULO;
 
         //Fim do tempo de fervura!
         if(startTimer && sec >= (fervura.duracaoMin*60)){
@@ -213,21 +227,22 @@ void processFervura() {
           etapa=ETAPA_WAIT_CONFIRM_END;
           break;
         }
-        
-        if(sec > (fervura.lupulo[indexTmp] * 60) && indexTmp < fervura.qtdLupulo){
-            beepAlarmeLupuloAsync();
+
+        if(sec >= alarmTimeStart && sec <=alarmTimeEnd){
+          //TODO disparar alarme sonoro.
+        }else if(sec > alarmTimeEnd){
+          //TODO PARAR ALARME
+          if((indexTmp+1) < fervura.qtdLupulo){
             indexTmp++;
+          }
         }
-        updateFervura((int)getThermoC(),fervura.tempFervura,indexTmp,fervura.qtdLupulo,sec);
+        updateFervura((int)getThermoC(),fervura.tempFervura,(indexTmp+1),fervura.qtdLupulo,sec);
       break;
       //************************************************************
-      //******AGUARDANDO CONFIRMACAO PARA TERMINAR**********
+      //******AGUARDANDO CONFIRMACAO PARA INICIO DE FERCURA**********
       case ETAPA_WAIT_CONFIRM_END:
-        beepWaitConfirm();
-        if(indexTmp++==0){
-          turnOffResistence();//DESLIGA RESISTENCIA
-          updateWaitConfirmEnd();
-        }
+        turnOffResistence();//DESLIGA RESISTENCIA
+        updateWaitConfirmEnd();
       return;
     }
     refreshResistence(fervura.tempFervura);
@@ -244,7 +259,6 @@ void processFervura() {
        break;
      }
 */
-//mudanca de etapa refresh screen; processBtPress(-1);
 void processBtPress(int btPress) {
   switch (menu) {
     /*=============================================*/
@@ -252,6 +266,7 @@ void processBtPress(int btPress) {
     case M_PRINCIPAL:
       switch (btPress) {
         case PIN_BT_ENTER:
+          indexTmp = 0;
           if (indexTmp == 0) {
             etapa = ETAPA_CONF_TEMP_PREAQC_BRASS;
             menu = M_CONF_BRASSAGEM;
@@ -260,8 +275,7 @@ void processBtPress(int btPress) {
             menu = M_CONF_FERVURA;
           }
           menuSelectTmp = menu;
-          processBtPress(-1);
-          return;
+          break;
 
         case PIN_BT_ADD:
           indexTmp = 0;
@@ -277,13 +291,12 @@ void processBtPress(int btPress) {
     /*=============menu conf. brassagem============*/
     case M_CONF_BRASSAGEM:
       if (btPress == PIN_BT_ENTER) {
-        if (etapa == (brassagem.qtdRampas * 2 + 1 )) { //quantidade de rampas*2(temp+time) + 1(0-aquec+1-qtdRampas);
+        if (etapa == (brassagem.qtdRampas * 2 + 2 )) { //quantidade de rampas*2(temp+time) + 2(aquec+qtdRampas);
           etapa = ETAPA_CONF_TEMP_FERV;
           menu = M_CONF_FERVURA;
         } else {
           etapa++;
         }
-        processBtPress(-1);
       } else {
         int x;
         if (btPress == PIN_BT_ADD) {
@@ -291,24 +304,17 @@ void processBtPress(int btPress) {
         } else if (btPress == PIN_BT_SUB) {
           x = -1;
         }
-              
         if (etapa == ETAPA_CONF_TEMP_PREAQC_BRASS) {
-          brassagem.tempPreAquec += x;
+          brassagem.tempPreAquec = brassagem.tempPreAquec + x;
           updateConfBrassagemPreAquec(brassagem.tempPreAquec);
         } else if (etapa == ETAPA_CONF_QTD_RAMPAS) {
-          brassagem.qtdRampas += x;
+          brassagem.qtdRampas = brassagem.qtdRampas + x;
           updateConfBrassagemQtdRampas(brassagem.qtdRampas);
         } else {
           //definicao da posicao na matriz [y][ps]
           float y = etapa / 2.0 - 1;
-          int ps = 0; 
-          if (fmod(y,1) > 0.000){
-            ps = 1;
-          }
-          brassagem.rampas[(int)y][ps] += x;//Define o valor na rampa
-          if((int)y < brassagem.qtdRampas-1){
-            brassagem.rampas[((int)y)+1][ps] = brassagem.rampas[(int)y][ps];//Define o mesmo valor para proxima rampa afim de ajudar na definicao.
-          }
+          int ps = 0; if (x % 1 > 0)ps = 1;
+          brassagem.rampas[(int)y][ps] = brassagem.rampas[(int)y][ps] + x;
           //y para 'n' da rampa; ps=0 para temperatura, ps=1 para tempo; valor;
           updateConfBrassagemRampas((int)y, ps, brassagem.rampas[(int)y][ps]);
         }
@@ -319,7 +325,7 @@ void processBtPress(int btPress) {
     /*=============menu conf. fervura==============*/
     case M_CONF_FERVURA:
       if (btPress == PIN_BT_ENTER) {
-        if (etapa == (fervura.qtdLupulo + 2 )) { //quantidade de lupulos + 2(0temp+1tempo+2qtd);
+        if (etapa == (fervura.qtdLupulo + 3 )) { //quantidade de lupulos + 3(temp+tempo+qtd);
           etapa = ETAPA_PREAQUEC;
           if (menuSelectTmp == M_CONF_BRASSAGEM) { //se selecionou no menu conf.Brassagem vai para etapa de brass.
             menu = M_BRASSAGEM;
@@ -329,7 +335,6 @@ void processBtPress(int btPress) {
         } else {
           etapa++;
         }
-        processBtPress(-1);
       } else {
         int x;
         if (btPress == PIN_BT_ADD) {
@@ -338,21 +343,17 @@ void processBtPress(int btPress) {
           x = -1;
         }
         if (etapa == ETAPA_CONF_TEMP_FERV) {
-          fervura.tempFervura += x;
+          fervura.tempFervura += fervura.tempFervura + x;
           updateConfFervuraTemp(fervura.tempFervura);
         } else if (etapa == ETAPA_CONF_DURC_FERV) {
-          fervura.duracaoMin += x;
+          fervura.duracaoMin = fervura.duracaoMin + x;
           updateConfFervuraDuration(fervura.duracaoMin);
         } else if (etapa == ETAPA_CONF_QTD_LUPULO) {
           fervura.qtdLupulo = fervura.qtdLupulo + x;
           updateConfFervuraQtdLupulo(fervura.qtdLupulo);
         } else {
-          int indxLup = etapa-3;
-          fervura.lupulo[indxLup] += x;//Define o valor do lupulo.
-          if(indxLup < fervura.qtdLupulo-1){
-            fervura.lupulo[indxLup+1] = fervura.lupulo[indxLup];//Define o mesmo valor no proximo lupulo pois o tempo nao pode ser menor que o anterior.
-          }
-          updateConfFervuraLupulo(indxLup, fervura.lupulo[indxLup]);
+          fervura.lupulo[etapa - 2] = fervura.lupulo[etapa - 2] + x;
+          updateConfFervuraLupulo(etapa - 2, fervura.lupulo[etapa - 2]);
         }
       }
       break;
@@ -362,11 +363,9 @@ void processBtPress(int btPress) {
       switch (btPress) {
         case PIN_BT_ENTER:
           if(etapa==ETAPA_WAIT_CONFIRM_FERV){
-            indexTmp=0;
             menu=M_FERVURA;
             etapa=ETAPA_PREAQUEC;
           }
-          processBtPress(-1);
           break;
         case PIN_BT_ADD:
           break;
@@ -380,11 +379,9 @@ void processBtPress(int btPress) {
       switch (btPress) {
         case PIN_BT_ENTER:
           if(etapa==ETAPA_WAIT_CONFIRM_END){
-            indexTmp=0;
             menu=M_PRINCIPAL;
             etapa=0;
           }
-          processBtPress(-1);
           break;
         case PIN_BT_ADD:
           break;
@@ -393,6 +390,46 @@ void processBtPress(int btPress) {
       }
       break;
 
+  }
+}
+
+/**
+   Retorna -1 se nenhum botão for pressionado.
+*/
+int getBtPress() {
+  if (digitalRead(PIN_BT_ENTER) == HIGH) {
+    tmpBtPressState = true;
+    tmpBtPress = PIN_BT_ENTER;
+  } else if (digitalRead(PIN_BT_ADD) == HIGH) {
+    tmpBtPressState = true;
+    tmpBtPress = PIN_BT_ADD;
+  } else if (digitalRead(PIN_BT_SUB) == HIGH) {
+    tmpBtPressState = true;
+    tmpBtPress = PIN_BT_SUB;
+  } else if (tmpBtPressState) {
+    tmpBtPressState = false;
+    return tmpBtPress;
+  }
+  return -1;
+}
+
+/**
+   Metodo para controle de UPS.
+*/
+void refreshUPS() {
+  if (ups > 1000) {
+    ups = ups - 1000;
+    sec++;
+  } else {
+    ups += DELAY;
+  }
+
+  time = millis() - time;
+  if (time < DELAY) {
+    delay(DELAY - time);
+  } else {
+    delay(time);
+    ups += time;
   }
 }
 

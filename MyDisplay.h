@@ -1,6 +1,6 @@
 #include <LiquidCrystal.h>
 
-LiquidCrystal lcd(8, 9, 10, 11, 12, 13);
+LiquidCrystal lcd(9, 8, 7, 6, 5, 4);
 
 // Simbolo de temperatura
 uint8_t degree[8]  = {140,146,146,140,128,128,128,128};
@@ -82,12 +82,12 @@ void updateConfBrassagemQtdRampas(int qtd){
 void updateConfBrassagemRampas(int pos,int tipo, int valor){
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("CONF. RAMPA "+(pos+1));
+  lcd.print("CONF. RAMPA "+String(pos+1));
   lcd.setCursor(0, 1);
-  if(tipo=0){
-    lcd.print("TEMPERATURA: "+valor);
+  if(tipo==0){
+    lcd.print("TEMPERATURA: "+String(valor));
   }else{
-    lcd.print("TEMPO(MIN): "+valor);
+    lcd.print("TEMPO(MIN): "+String(valor));
   }
 }
 
@@ -132,9 +132,9 @@ void updateConfFervuraQtdLupulo(int qtd){
 void updateConfFervuraLupulo(int pos, int valor){
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("CONF. LUPULO "+(pos+1));
+  lcd.print("CONF. LUPULO "+String(pos+1));
   lcd.setCursor(0, 1);
-  lcd.print("TEMPO(MIN): "+valor);
+  lcd.print("TEMPO(MIN): "+String(valor));
 }
 
 /**
