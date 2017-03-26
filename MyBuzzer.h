@@ -5,14 +5,29 @@ const int PIN_BUZZER=10;
 void beepButtonPressed();
 void setupBuzzer();
 
-void beepWaitConfirm();
-void beepAlarmeRampaAsync();
-void beepAlarmeLupuloAsync();
-void beepAlarmeStartAsync();
+void alarmAsync();
+void alarmWaitConfirm();
+void playAsync();
+int timeToReproduction;
 
 int notes[] = {
   NOTE_A4, NOTE_B4, NOTE_C3
 };
+
+long lastTime = -1;
+
+void loopBuzzer(){
+  if(timeToReproduction>0){
+    if(lastTime<0){
+      lastTime = millis();
+    }
+    playAsync();
+    timeToReproduction = timeToReproduction-(millis() - lastTime);
+    lastTime = millis();
+  }else{
+    lastTime=-1;
+  }
+}
 
 void setupBuzzer(){
   pinMode(PIN_BUZZER, OUTPUT);
@@ -22,19 +37,15 @@ void beepButtonPressed(){
   tone(PIN_BUZZER,notes[0],20);
 }
 
-void beepAlarmeLupuloAsync(){
+void alarmAsync(int duration){
+  timeToReproduction=duration * 1000;
+}
+
+void playAsync(){
   tone(PIN_BUZZER,notes[2],50);
 }
 
-void beepAlarmeStartAsync(){
-  tone(PIN_BUZZER,notes[2],50);
-}
-
-void beepAlarmeRampaAsync(){
-  tone(PIN_BUZZER,notes[2],50);
-}
-
-void beepWaitConfirm(){
+void alarmWaitConfirm(){
   tone(PIN_BUZZER,notes[2],50);
 }
 

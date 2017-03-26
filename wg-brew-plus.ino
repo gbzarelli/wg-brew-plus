@@ -27,7 +27,11 @@ const int ETAPA_FERVURA_LUP=4;
 const int ETAPA_WAIT_CONFIRM_END=5;
 
 // Constanstes de configuracao de tempo;
-const int SEC_ALARM_LUPULO = 5;//duração do alarme do lupulo
+const int SEC_ALARM_LUPULO = 10;//duração do alarme do lupulo
+const int SEC_ALARM_RAMPA = 10;//duração do alarme de rampa
+const int SEC_ALARM_START_COUNT = 2;//duração do alarme quando inicia o cronometro
+const int SEC_ALARM_WAIT_ENTER = 30;//duração do alarme AGUARDANDO PROSSEGUIR
+
 
 //Variaveis de controle
 int menu = 0;
@@ -107,7 +111,9 @@ void setup() {
 */
 void loop() {
   startLoop();
-
+  
+  loopBuzzer();
+  
   int btPressed = getBtPress();
   
   if (btPressed != -1) {
@@ -147,16 +153,16 @@ void processBrassagem() {
      
       //se o chronometro nao foi iniciado e a temperatura chegou no nivel da rampa,
       //inicia o chronometro;
-      if(!startTimer && getThermoC() >= temperature) {
-        beepAlarmeStartAsync();
+      if(!startTimer && getThermoC() >= temperature && getThermoC() <= (temperature +2)) {
+        alarmAsync(SEC_ALARM_RAMPA);
         startTimer=true;
         sec=0;
       }
       
       if(startTimer && sec >= duration){
         //Verifica se ainda existe rampas configuradas:
-        if(indexTmp < brassagem.qtdRampas){
-          beepAlarmeRampaAsync();
+        if(indexTmp+1 < brassagem.qtdRampas){
+          alarmAsync(SEC_ALARM_START_COUNT);
           indexTmp++;//Se existir incrementa;
         }else{
           indexTmp=0;
@@ -180,8 +186,9 @@ void processBrassagem() {
     //************************************************************
     //******AGUARDANDO CONFIRMACAO PARA INICIO DE FERCURA**********
     case ETAPA_WAIT_CONFIRM_FERV:
-      beepWaitConfirm();
-      if(indexTmp++==0){
+      if(indexTmp==0){
+        indexTmp++;
+        alarmAsync(SEC_ALARM_WAIT_ENTER);
         turnOffResistence();//DESLIGA RESISTENCIA
         updateWaitConfirmFerv();
       }
@@ -196,7 +203,7 @@ void processFervura() {
       //**********************************
       case ETAPA_PREAQUEC:
         if(getThermoC() >= fervura.tempFervura){
-          beepAlarmeStartAsync();
+          alarmAsync(SEC_ALARM_START_COUNT);
           sec=0;
           indexTmp=0;
           etapa=ETAPA_FERVURA_LUP;
@@ -208,14 +215,14 @@ void processFervura() {
       case ETAPA_FERVURA_LUP:
 
         //Fim do tempo de fervura!
-        if(startTimer && sec >= (fervura.duracaoMin*60)){
+        if(sec >= (fervura.duracaoMin*60)){
           indexTmp=0;
           etapa=ETAPA_WAIT_CONFIRM_END;
           break;
         }
         
         if(sec > (fervura.lupulo[indexTmp] * 60) && indexTmp < fervura.qtdLupulo){
-            beepAlarmeLupuloAsync();
+            alarmAsync(SEC_ALARM_LUPULO);
             indexTmp++;
         }
         updateFervura((int)getThermoC(),fervura.tempFervura,indexTmp,fervura.qtdLupulo,sec);
@@ -223,8 +230,9 @@ void processFervura() {
       //************************************************************
       //******AGUARDANDO CONFIRMACAO PARA TERMINAR**********
       case ETAPA_WAIT_CONFIRM_END:
-        beepWaitConfirm();
-        if(indexTmp++==0){
+        if(indexTmp==0){
+          indexTmp++;
+          alarmAsync(SEC_ALARM_WAIT_ENTER);
           turnOffResistence();//DESLIGA RESISTENCIA
           updateWaitConfirmEnd();
         }
