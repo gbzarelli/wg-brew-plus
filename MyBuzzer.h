@@ -1,6 +1,6 @@
 #include "pitches.h"
 
-const int PIN_BUZZER=10;
+const int PIN_BUZZER=11;
 
 void beepButtonPressed();
 void setupBuzzer();

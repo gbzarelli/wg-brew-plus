@@ -2,9 +2,9 @@
 
 //Constantes utilizadas para definir pino dos botoes
 //e tambem define o botao que foi pressionado.
-const int PIN_BT_ENTER = A5;
-const int PIN_BT_ADD = 2;
-const int PIN_BT_SUB = 3;
+const int PIN_BT_ENTER = 10;
+const int PIN_BT_ADD = 9;
+const int PIN_BT_SUB = 8;
 
 //Variaveis de controle de botoes pressionados
 int tmpBtPress = -1;

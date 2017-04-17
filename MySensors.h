@@ -1,19 +1,15 @@
 #include <max6675.h>
 
-const boolean DEBUG = true;
+const boolean DEBUG = false;
 
 //temperatura de chaveamento em Cº
 const int SWITCH_TEMP_VARIABLE = 2;
 
-const int PIN_THERMO_DO=13;
-const int PIN_THERMO_CS=12;
-const int PIN_THERMO_CLK=11;
+const int PIN_THERMO_DO=A3;
+const int PIN_THERMO_CS=A4;
+const int PIN_THERMO_CLK=A5;
 
-const int PIN_RESISTENCE = A1;
-
-const int PIN_THERMO_DEBUG = A0;
-
-//int vccPin = 3;int gndPin = 2;
+const int PIN_RESISTENCE = A2;
 
 MAX6675 thermocouple(PIN_THERMO_CLK, PIN_THERMO_CS, PIN_THERMO_DO);
 
@@ -29,7 +25,11 @@ void setupSensors() {
   pinMode(PIN_RESISTENCE, OUTPUT);
   
   if(DEBUG){
-    pinMode(PIN_THERMO_DEBUG,INPUT);
+    pinMode(PIN_THERMO_DO,OUTPUT);
+    pinMode(PIN_THERMO_CS,INPUT);
+    pinMode(PIN_THERMO_CLK,OUTPUT);
+    digitalWrite(PIN_THERMO_DO,HIGH);
+    digitalWrite(PIN_THERMO_CLK,LOW);
   }else{
     //TODO
   }
@@ -71,8 +71,13 @@ void turnOffResistence(){
 */
 double getThermoC() {
   if(DEBUG){
-    return map(analogRead(PIN_THERMO_DEBUG),0,1023,0,200);
+    return map(analogRead(PIN_THERMO_CS),0,1023,0,200);
   }else{
+   Serial.print("C = "); 
+   Serial.println(thermocouple.readCelsius());
+   Serial.print("F = ");
+   Serial.println(thermocouple.readFahrenheit());
+   
     return thermocouple.readCelsius();
   }
 }

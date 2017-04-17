@@ -1,6 +1,7 @@
 #include <LiquidCrystal.h>
 
-LiquidCrystal lcd(9, 8, 7, 6, 5, 4);
+//LiquidCrystal lcd(9, 8, 7, 6, 5, 4);
+LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 
 // Simbolo de temperatura
 uint8_t degree[8]  = {140,146,146,140,128,128,128,128};
@@ -38,14 +39,20 @@ void setupDisplay(){
  */
 void updateMenuPrincipal(int index){
   lcd.clear();
+  
   lcd.setCursor(4, 0);
-  lcd.print("BRASSAGEM");
-  lcd.setCursor(4, 1);
-  lcd.print("FERVURA");
-  if(index==0){
-    lcd.setCursor(0,0);
+  if(index<=1){
+    lcd.print("BRASSAGEM");
+    lcd.setCursor(4, 1);
+    lcd.print("FERVURA");
   }else{
+    lcd.print("REFRIGERAR");
+  }
+
+  if(index==1){
     lcd.setCursor(0,1);
+  }else{
+    lcd.setCursor(0,0);
   }
   lcd.print(" -> ");
 }
