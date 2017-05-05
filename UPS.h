@@ -8,14 +8,15 @@ unsigned long time;
 
 void refreshUPS();
 void startLoop();
-void endLoop();
+int endLoop();
 
 void startLoop(){
   time = millis();
 }
 
-void endLoop(){
+int endLoop(){
   refreshUPS();
+  return sec;
 }
 
 void refreshUPS() {

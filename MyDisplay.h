@@ -9,20 +9,27 @@ uint8_t degree[8]  = {140,146,146,140,128,128,128,128};
 // Metodos
 void setupDisplay();
 void updateMenuPrincipal(int index);
+
 void updateConfBrassagemPreAquec(int temp);
 void updateConfBrassagemQtdRampas(int qtd);
 void updateConfBrassagemRampas(int pos,int tipo, int valor);
+
 void updateConfFervuraQtdLupulo(int qtd);
 void updateConfFervuraLupulo(int pos, int valor);
 void updateConfFervuraDuration(int qtd);
 void updateConfFervuraTemp(int temp);
+
 void updatePreAquecBrassagem(int temp, int tempDesired);
 void printTemp(int temp);
 void updateWaitConfirmFerv();
 void updateRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int timeSec);
 void updatePreAquecFervura(int temp, int tempDesired);
-void updateWaitConfirmEnd();
+void updateWaitConfirmEnd(String msg);
 void updateFervura(int currentTemp,int tempFervura,int lupulo, int maxLupulo, int timeSec);
+
+void updateConfRefrQtdRampas(int qtd);
+void updateConfRefrRampas(int pos,int tipo, int valor);
+void updateRefrRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int timeHoras, int horasRampa);
 
 void setupDisplay(){
   // Inicializa LCD
@@ -141,7 +148,7 @@ void updateConfFervuraLupulo(int pos, int valor){
   lcd.setCursor(0, 0);
   lcd.print("CONF. LUPULO "+String(pos+1));
   lcd.setCursor(0, 1);
-  lcd.print("TEMPO(MIN): "+String(valor));
+  lcd.print("NO MINUTO: "+String(valor));
 }
 
 /**
@@ -214,10 +221,10 @@ void updatePreAquecFervura(int temp, int tempDesired){
   printTemp(tempDesired);  
 }
 
-void updateWaitConfirmEnd(){
+void updateWaitConfirmEnd(String msg){
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("FIM DA FERVURA");
+  lcd.print(msg);
   lcd.setCursor(0, 1);
   lcd.print("PRESS. ENTER");
 }
@@ -245,6 +252,69 @@ void updateFervura(int currentTemp,int tempFervura,int lupulo, int maxLupulo, in
   lcd.print("A:");
   printTemp(currentTemp);
 }
+
+
+
+/**
+ * Exibe quantidade de rampas da refrigeracao
+ */
+void updateConfRefriQtdRampas(int qtd){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("QTD. RAMPAS:");
+  lcd.setCursor(0, 1);
+  lcd.print(qtd);
+}
+
+/**
+ * Exibe informações de configuração das rampas da refrigeracao.
+ * 
+ * int pos = indice da configuracao da rampa.
+ * int tipo = 0 para temperatura; 1 para tempo;
+ * int valor = temperatura ou tempo;
+ */
+void updateConfRefriRampas(int pos,int tipo, int valor){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("CONF. RAMPA "+String(pos+1));
+  lcd.setCursor(0, 1);
+  if(tipo==0){
+    lcd.print("TEMPERATURA: "+String(valor));
+  }else{
+    lcd.print("HORAS: "+String(valor));
+  }
+}
+/**
+     -0123456789012345-
+     |R:10/10  T:10ºC |
+     |00/90h   A:20ºC |
+    
+     -0123456789012345-
+     |R:2/5    T:10ºC |
+     |Wait...  A:20ºC |
+ */
+ 
+void updateRefriRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int timeHoras, int horasRampa){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  String l1 = "R:" + String(rampa) + "/" + maxRampa;
+  lcd.print(l1);
+  lcd.setCursor(9, 0);
+  lcd.print("T:");
+  printTemp(tempRampa);
+  lcd.setCursor(0, 1);
+  String l2;
+  if(start){
+    l2 = (timeHoras<10?"0"+String(timeHoras):timeHoras) + "/" + (horasRampa<10?"0"+String(horasRampa):horasRampa) + "h";
+  }else{
+    l2 = "WAIT...";
+  }
+  lcd.print(l2);
+  lcd.setCursor(9, 1);
+  lcd.print("A:");
+  printTemp(currentTemp);
+}
+
 
 /**
  * Mostra a temperatura passada com o simbolo ex: '20ºC'

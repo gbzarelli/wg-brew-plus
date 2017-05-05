@@ -8,10 +8,11 @@ void setupBuzzer();
 void alarmAsync();
 void alarmWaitConfirm();
 void playAsync();
+void stopAlarm();
 int timeToReproduction;
 
 int notes[] = {
-  NOTE_A4, NOTE_B4, NOTE_C3
+  NOTE_A4, NOTE_B4
 };
 
 long lastTime = -1;
@@ -29,6 +30,10 @@ void loopBuzzer(){
   }
 }
 
+void stopAlarm(){
+  timeToReproduction=-1;
+}
+
 void setupBuzzer(){
   pinMode(PIN_BUZZER, OUTPUT);
 }
@@ -42,10 +47,10 @@ void alarmAsync(int duration){
 }
 
 void playAsync(){
-  tone(PIN_BUZZER,notes[2],50);
+  tone(PIN_BUZZER,notes[1],50);
 }
 
 void alarmWaitConfirm(){
-  tone(PIN_BUZZER,notes[2],50);
+  tone(PIN_BUZZER,notes[1],50);
 }
 
