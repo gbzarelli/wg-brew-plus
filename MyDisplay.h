@@ -8,6 +8,7 @@ uint8_t degree[8]  = {140,146,146,140,128,128,128,128};
 
 // Metodos
 void setupDisplay();
+void showTemperature(int temperature);
 void updateMenuPrincipal(int index);
 
 void updateConfBrassagemPreAquec(int temp);
@@ -29,7 +30,7 @@ void updateFervura(int currentTemp,int tempFervura,int lupulo, int maxLupulo, in
 
 void updateConfRefrQtdRampas(int qtd);
 void updateConfRefrRampas(int pos,int tipo, int valor);
-void updateRefrRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int timeHoras, int horasRampa);
+void updateRefrRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int timeHoras, int horasRampa,int var1);
 
 void setupDisplay(){
   // Inicializa LCD
@@ -42,6 +43,16 @@ void setupDisplay(){
   lcd.print("CARREGANDO...");
 }
 /**
+ * Exibe a temperatura atual
+ */
+void showTemperature(int temperature){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("TEMPERATURA;");
+  lcd.setCursor(0, 1);
+  printTemp(temperature);
+}
+/**
  * Update de tela. Menu principal, escolha de brassagem ou fervura.
  */
 void updateMenuPrincipal(int index){
@@ -52,14 +63,16 @@ void updateMenuPrincipal(int index){
     lcd.print("BRASSAGEM");
     lcd.setCursor(4, 1);
     lcd.print("FERVURA");
-  }else{
+  }else if(index<=3){
     lcd.print("REFRIGERAR");
+    lcd.setCursor(4, 1);
+    lcd.print("TEMPERATURA");
   }
 
-  if(index==1){
-    lcd.setCursor(0,1);
-  }else{
+  if(index%2 == 0){
     lcd.setCursor(0,0);
+  }else{
+    lcd.setCursor(0,1);
   }
   lcd.print(" -> ");
 }
@@ -294,18 +307,23 @@ void updateConfRefriRampas(int pos,int tipo, int valor){
      |Wait...  A:20ºC |
  */
  
-void updateRefriRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int timeHoras, int horasRampa){
+void updateRefriRampa(boolean start, int rampa,int maxRampa, int currentTemp,int tempRampa, int timeHoras, int horasRampa, int var1){
   lcd.clear();
   lcd.setCursor(0, 0);
   String l1 = "R:" + String(rampa) + "/" + maxRampa;
   lcd.print(l1);
-  lcd.setCursor(9, 0);
-  lcd.print("T:");
+  if(var1==0){
+    lcd.setCursor(8, 0);
+    lcd.print("*T:");
+  }else{
+    lcd.setCursor(9, 0);
+    lcd.print("T:");
+  }
   printTemp(tempRampa);
   lcd.setCursor(0, 1);
   String l2;
   if(start){
-    l2 = (timeHoras<10?"0"+String(timeHoras):timeHoras) + "/" + (horasRampa<10?"0"+String(horasRampa):horasRampa) + "h";
+    l2 = (timeHoras<10?"0"+String(timeHoras):timeHoras) + "/" + (horasRampa<10?"0"+String(horasRampa):horasRampa) + "h"+(var1==1?"*":"");
   }else{
     l2 = "WAIT...";
   }

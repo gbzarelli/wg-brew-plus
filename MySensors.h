@@ -11,12 +11,16 @@ const int TYPE_SENSOR = SENSOR_LM35;
 const int SWITCH_TEMP_VARIABLE_NEGATIVE = 1;//temperatura de troca para ligar/desligar para temperatura negativa;
 const int SWITCH_TEMP_VARIABLE_VALIDATION = 2;//range de temperatura utilizado na validação.
 
+const int TIME_REFRESH_PID = 1000;//TEMpo para atualizacao do PID (em millis)
+const int VALUE_TURN_ON_RESISTENCE_PID = 75;//Valor de acionamento resistencia (pid retorna de 0-255)
+
+const int PIN_RESISTENCE = 12;
+
 const int PIN_LM35_0 = A0;
 const int PIN_LM35_1 = A1;
-const int PIN_RESISTENCE = A2;
-const int PIN_THERMO_DO=A3;
-const int PIN_THERMO_CS=A4;
-const int PIN_THERMO_CLK=A5;
+const int PIN_THERMO_DO=A0;
+const int PIN_THERMO_CS=A1;
+const int PIN_THERMO_CLK=A2;
 
 MAX6675 thermocouple(PIN_THERMO_CLK, PIN_THERMO_CS, PIN_THERMO_DO);
 
@@ -71,7 +75,7 @@ long myTimePID=0;
 //*************************************************************************************
 
 void loopSensors(){
-  if(startPID && (millis()-myTimePID)>1000){
+  if(startPID && (millis()-myTimePID)>TIME_REFRESH_PID){
       myTimePID=millis();
       controllPID();
   }
@@ -82,7 +86,7 @@ void controllPID(){
   myPID.Compute();
   Serial.print("Output: ");
   Serial.println(Output);
-  if (Output > 70){
+  if (Output >= VALUE_TURN_ON_RESISTENCE_PID){
     turnOnResistence();
   }else{
     turnOffResistence();
@@ -154,8 +158,9 @@ void turnOffResistence(){
 }
 //40 -37
 boolean inTemperature(int temperature){
-  if(getThermoC() >= (temperature-SWITCH_TEMP_VARIABLE_VALIDATION) && getThermoC() <= (temperature + SWITCH_TEMP_VARIABLE_VALIDATION)){
-    Serial.print("VALIDADO: ");Serial.print(temperature);Serial.print(" THERMO: ");Serial.println(getThermoC());
+  int readTemp = getThermoC();
+  if(readTemp >= (temperature-SWITCH_TEMP_VARIABLE_VALIDATION) && readTemp <= (temperature + SWITCH_TEMP_VARIABLE_VALIDATION)){
+    Serial.print("VALIDADO: ");Serial.print(temperature);Serial.print(" THERMO: ");Serial.println(readTemp);
     return true;
   }
   return false;

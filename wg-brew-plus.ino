@@ -14,6 +14,7 @@ const int M_CONF_REFRIGERAR = 5;
 const int M_BRASSAGEM = 3;
 const int M_FERVURA = 4;
 const int M_REFRIGERAR = 6;
+const int M_EXIBIR_TEMPERATURA = 7;
 
 //Constantes utilizadas na configuração da brassagem e fervura
 const int ETAPA_CONF_TEMP_FERV = 0;
@@ -32,6 +33,7 @@ const int ETAPA_WAIT_CONFIRM_FERV=2;
 const int ETAPA_FERVER=3;
 const int ETAPA_FERVURA_LUP=4;
 const int ETAPA_WAIT_CONFIRM_END=5;
+const int ETAPA_WAIT_CONFIRM_RAMPA=6;
 
 // Constanstes de configuracao de tempo;
 const int SEC_ALARM_LUPULO = 10;//duração do alarme do lupulo
@@ -43,6 +45,7 @@ const int SEC_ALARM_WAIT_ENTER = 30;//duração do alarme AGUARDANDO PROSSEGUIR
 //Variaveis de controle
 int menu = 0;
 int etapa = 0;
+int var1 = 0;
 int indexTmp = 0;//indice temporario.(utilizado em qualquer rotina)
 int menuSelectTmp;//controle de qual item do menu foi selecionado.
 boolean startTimer;//controle para definir o inicio do timer;
@@ -93,6 +96,7 @@ void setup() {
 
 void zerarDados(){
   indexTmp=0;
+  var1=0;
   menu=M_PRINCIPAL;
   etapa=0;
   brassagem.tempPreAquec = 50;
@@ -150,27 +154,31 @@ void loop() {
     processBtPress(btPressed);
   }
 
-  if (M_REFRIGERAR == menu) {
-    processRefrigerar();
-  } else  if (M_BRASSAGEM == menu) {
-    processBrassagem();
-  } else if (M_FERVURA == menu) {
-    processFervura();
+  //Faz processamento de dados 2x por segundo.
+  if(ups==DELAY||btPressed!=-1){
+    if (M_REFRIGERAR == menu) {
+      processRefrigerar();
+    } else  if (M_BRASSAGEM == menu) {
+      processBrassagem();
+    } else if (M_FERVURA == menu) {
+      processFervura();
+    } else if(M_EXIBIR_TEMPERATURA == menu){
+      showTemperature(getThermoC());
+    }
   }
-
+  
   sec = endLoop();
 }
 
-void processRefrigerar(){
-  int temperature;
-  int duration;
-  
+void processRefrigerar(){  
+      int temperature = 0;
+      long duration = 0;
   switch(etapa){
     //**********************************
-    case ETAPA_RAMPAS:
-      temperature = refrigerar.rampas[indexTmp][0];
-      duration = refrigerar.rampas[indexTmp][1] * 3600;
-     
+    case ETAPA_RAMPAS:      
+      temperature=refrigerar.rampas[indexTmp][0];
+      duration=(refrigerar.rampas[indexTmp][1]) * 3600L;
+      
       //se o chronometro nao foi iniciado e a temperatura chegou no nivel da rampa,
       //inicia o chronometro;
       if(!startTimer && inTemperature(temperature)) {
@@ -192,7 +200,7 @@ void processRefrigerar(){
         break;
       }
 
-      if(ups>=1000)updateRefriRampa(startTimer, (indexTmp+1), refrigerar.qtdRampas,getThermoC(), temperature, (sec/3600), refrigerar.rampas[indexTmp][1]);
+      updateRefriRampa(startTimer, (indexTmp+1), refrigerar.qtdRampas,getThermoC(), temperature, (sec/3600), refrigerar.rampas[indexTmp][1],var1);
       refreshResistenceRefri(temperature);
       
       break;
@@ -221,10 +229,10 @@ void processBrassagem() {
       temperature = brassagem.tempPreAquec;
       if(inTemperature(temperature)){
         startTimer=false;
-        etapa=ETAPA_RAMPAS;
+        etapa=ETAPA_WAIT_CONFIRM_RAMPA;
         indexTmp=0;
       }
-      if(ups>=1000)updatePreAquecBrassagem((int)getThermoC(),brassagem.tempPreAquec);
+      updatePreAquecBrassagem((int)getThermoC(),brassagem.tempPreAquec);
     break;
 
     //**********************************
@@ -259,9 +267,19 @@ void processBrassagem() {
         duration = duration - sec;
       }
 
-      if(ups>=1000)updateRampa(startTimer, (indexTmp+1), brassagem.qtdRampas,getThermoC(), temperature, duration);      
+      updateRampa(startTimer, (indexTmp+1), brassagem.qtdRampas,getThermoC(), temperature, duration);      
       break;
 
+    //************************************************************
+    //******AGUARDANDO CONFIRMACAO PARA INICIO DA RAMPA**********
+    case ETAPA_WAIT_CONFIRM_RAMPA:
+      temperature = brassagem.tempPreAquec;
+      if(0 == indexTmp){
+        indexTmp++;
+        alarmAsync(SEC_ALARM_WAIT_ENTER);
+        updateWaitConfirmEnd("INICIAR RAMPAS");
+      }
+    break;
     //************************************************************
     //******AGUARDANDO CONFIRMACAO PARA INICIO DE FERCURA**********
     case ETAPA_WAIT_CONFIRM_FERV:
@@ -288,7 +306,7 @@ void processFervura() {
           indexTmp=0;
           etapa=ETAPA_FERVURA_LUP;
         }
-        if(ups>=1000)updatePreAquecFervura((int)getThermoC(),fervura.tempFervura);
+        updatePreAquecFervura((int)getThermoC(),fervura.tempFervura);
       break;
       
       //**********************************
@@ -304,7 +322,7 @@ void processFervura() {
             alarmAsync(SEC_ALARM_LUPULO);
             indexTmp++;
         }
-        if(ups>=1000)updateFervura((int)getThermoC(),fervura.tempFervura,indexTmp,fervura.qtdLupulo,sec);
+        updateFervura((int)getThermoC(),fervura.tempFervura,indexTmp,fervura.qtdLupulo,sec);
       break;
       //************************************************************
       //******AGUARDANDO CONFIRMACAO PARA TERMINAR**********
@@ -348,6 +366,8 @@ void processBtPress(int btPress) {
           } else if (2 == indexTmp) {
           	etapa = ETAPA_CONF_QTD_RAMPAS;
             menu = M_CONF_REFRIGERAR;
+          }else if (3 == indexTmp) {
+            menu = M_EXIBIR_TEMPERATURA;
           }
           menuSelectTmp = menu;
           processBtPress(-1);
@@ -360,7 +380,7 @@ void processBtPress(int btPress) {
           break;
 
         case PIN_BT_SUB:
-          if(indexTmp<2){
+          if(indexTmp<3){
           	indexTmp++;
           }
           break;
@@ -530,10 +550,12 @@ void processBtPress(int btPress) {
       switch (btPress) {
         case PIN_BT_ENTER:
           if(ETAPA_WAIT_CONFIRM_FERV==etapa){
-            indexTmp=0;
             menu=M_FERVURA;
             etapa=ETAPA_PREAQUEC;
+          }else if(ETAPA_WAIT_CONFIRM_RAMPA==etapa){
+            etapa=ETAPA_RAMPAS;
           }
+          indexTmp=0;
           stopAlarm();
           processBtPress(-1);
           break;
@@ -587,6 +609,8 @@ void processBtPress(int btPress) {
         case PIN_BT_ENTER:
           if(ETAPA_WAIT_CONFIRM_END==etapa){
             zerarDados();
+          }else if(ETAPA_RAMPAS==etapa){
+            var1 = var1==0?1:0;
           }
           stopAlarm();
           processBtPress(-1);
@@ -601,11 +625,21 @@ void processBtPress(int btPress) {
           }
 
           if(ETAPA_RAMPAS==etapa){
-              refrigerar.rampas[indexTmp][0] += x;
+            refrigerar.rampas[indexTmp][var1] += x;
           }
           break;
       }
       break;
+     /*=========================================================*/
+      /*=============proc. exibir temperatura===================*/
+    case M_EXIBIR_TEMPERATURA:
+      switch (btPress) {
+          case PIN_BT_ENTER:
+            zerarDados();
+            processBtPress(-1);
+          break;
+      }
+    break;
   }
 }
 
