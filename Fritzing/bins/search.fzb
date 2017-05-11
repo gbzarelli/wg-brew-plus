@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module fritzingVersion="0.9.3b.04.19.5c895d327c44a3114e5fcc9d8260daf0cbb52806" icon="Search.png" search="screw">
+    <title>Search</title>
+    <instances>
+        <instance moduleIdRef="screw_terminal_2_300mil" modelIndex="11978" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/screw_terminal_2_300mil.fzp">
+            <views>
+                <iconView layer="">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="Rotoshield-1.0a" modelIndex="7983" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/Rotoshield-1.0a.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="Power Screwshield 1.0a" modelIndex="10061" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/Power Screwshield 1.0a.fzp">
+            <views>
+                <iconView layer="">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="SparkFun-Electromechanical-STAND-OFF-TIGHT" modelIndex="8998" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/sparkfun-electromechanical-stand-off-tight.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="MonsterMoto-Shield-v12" modelIndex="8730" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/MonsterMoto-Shield-v12.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="SparkFun-Connectors-M04-SCREW_LOCK" modelIndex="10205" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/sparkfun-connectors-m04-screw_lock.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="screwshield-v15" modelIndex="7969" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/screwshield-v15.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="SparkFun-Electromechanical-STAND-OFF-" modelIndex="12821" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/sparkfun-electromechanical-stand-off-.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="SparkFun-Connectors-M02-3.5MM_LOCK" modelIndex="10336" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/sparkfun-connectors-m02-3.5mm_lock.fzp">
+            <views>
+                <iconView layer="">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="Ardumoto v13" modelIndex="8717" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/Ardumoto v13.fzp">
+            <views>
+                <iconView layer="">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="PowerDriver-Shield-v13" modelIndex="8171" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/PowerDriver-Shield-v13.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="Arduino_bt07" modelIndex="8377" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/Arduino_bt07.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="screw_terminal_2_100mil" modelIndex="11993" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/screw_terminal_2_100mil.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="screw_terminal_2_3.5mm" modelIndex="5711" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/screw_terminal_2_3.5mm.fzp">
+            <views>
+                <iconView layer="breadboardRuler">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="SparkFun_Soil_Moisture_Sensor" modelIndex="7977" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/SparkFun_Soil_Moisture_Sensor.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="LeDeuligne1.1" modelIndex="8121" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/LeDeuligne1.1.fzp">
+            <views>
+                <iconView layer="">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="SparkFun-Connectors-M03-SCREW_LOCK" modelIndex="10511" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/sparkfun-connectors-m03-screw_lock.fzp">
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="screw_terminal_2_200mil" modelIndex="12003" path="/home/gbzarelli/fritzing-0.9.3b.linux.AMD64/fritzing-parts/core/screw_terminal_2_200mil.fzp">
+            <views>
+                <iconView layer="">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="screw_terminal_2_3.5mm_hs_1.1mm_0.508mm" modelIndex="12005" path="/home/gbzarelli/.config/Fritzing/partfactory/9d487fb9c47f7127f9713aca826a86fa/core/screw_terminal_2_3.5mm_hs_1.1mm_0.508mm.fzp">
+            <property name="hole size" value="1.1mm,0.508mm"/>
+            <views>
+                <iconView layer="icon">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+        <instance moduleIdRef="screw_terminal_2_3.5mm_hs_1.0mm_0.508mm" modelIndex="12007" path="/home/gbzarelli/.config/Fritzing/partfactory/9d487fb9c47f7127f9713aca826a86fa/core/screw_terminal_2_3.5mm_hs_1.0mm_0.508mm.fzp">
+            <property name="hole size" value="1.0mm,0.508mm"/>
+            <views>
+                <iconView layer="">
+                    <geometry z="0" x="-1" y="-1"/>
+                </iconView>
+            </views>
+        </instance>
+    </instances>
+</module>
