@@ -1,7 +1,6 @@
 #include <LiquidCrystal.h>
 
-//LiquidCrystal lcd(9, 8, 7, 6, 5, 4);
-LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
+LiquidCrystal lcd(2,3,4,5,6,7);
 
 // Simbolo de temperatura
 uint8_t degree[8]  = {140,146,146,140,128,128,128,128};
@@ -10,6 +9,8 @@ uint8_t degree[8]  = {140,146,146,140,128,128,128,128};
 void setupDisplay();
 void showTemperature(int temperature);
 void updateMenuPrincipal(int index);
+
+void updateConfAqeucimento(int temperature);
 
 void updateConfBrassagemPreAquec(int temp);
 void updateConfBrassagemQtdRampas(int qtd);
@@ -20,6 +21,7 @@ void updateConfFervuraLupulo(int pos, int valor);
 void updateConfFervuraDuration(int qtd);
 void updateConfFervuraTemp(int temp);
 
+void updateAquecimento(boolean inTemp, int temp, int tempDesired);
 void updatePreAquecBrassagem(int temp, int tempDesired);
 void printTemp(int temp);
 void updateWaitConfirmFerv();
@@ -66,9 +68,10 @@ void updateMenuPrincipal(int index){
   }else if(index<=3){
     lcd.print("REFRIGERAR");
     lcd.setCursor(4, 1);
-    lcd.print("TEMPERATURA");
+    lcd.print("AQUECIMENTO");
+  }else if(index<=4){
+    lcd.print("EXIBIR TEMP.");
   }
-
   if(index%2 == 0){
     lcd.setCursor(0,0);
   }else{
@@ -118,6 +121,16 @@ void updateConfBrassagemRampas(int pos,int tipo, int valor){
   }
 }
 
+/**
+ * Configuração de temperatura da etapa de aquecimento.
+ */
+void updateConfAqeucimento(int temp){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("TEMP DE AQUEC.");
+  lcd.setCursor(0, 1);
+  printTemp(temp);
+}
 
 /**
  * Exibe temperatura fervura
@@ -190,6 +203,26 @@ void updateWaitConfirmFerv(){
   lcd.print("PRESS. ENTER");
 }
 
+/**
+ * Exibe tela de aquecimento, mostra temperatura atual e desejada
+ *   "MODO AQUECIMENTO"
+ *   "T:20ºC   A:15ºC "
+ */
+void updateAquecimento(boolean inTemp, int temp, int tempDesired){
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  if(inTemp){
+    lcd.print("TEMP. ATINGIDA!!");
+  }else{
+    lcd.print("MODO AQUECIMENTO");
+  }
+  lcd.setCursor(0, 1);
+  lcd.print("T:");
+  printTemp(tempDesired);
+  lcd.setCursor(9, 1);
+  lcd.print("A:");
+  printTemp(temp);
+}
 /**
      -0123456789012345-
      |R:10/10  T:10ºC |

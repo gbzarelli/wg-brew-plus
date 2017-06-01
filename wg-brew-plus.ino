@@ -4,17 +4,26 @@
 #include "UPS.h"
 #include "MyButtons.h"
 
+#define PIN_RELE_1 10
+
+#define PIN_LED_BRASSAGEM A1
+#define PIN_LED_FERVURA A2
+#define PIN_LED_REFRIGERACAO A3
+#define PIN_LED_AQUECIMENTO A4
+
 //Constantes que define a tela atual a ser exibida.
 const int M_PRINCIPAL = 0;
 
 const int M_CONF_BRASSAGEM = 1;
 const int M_CONF_FERVURA = 2;
 const int M_CONF_REFRIGERAR = 5;
+const int M_CONF_AQUECIMENTO= 9;
 
 const int M_BRASSAGEM = 3;
 const int M_FERVURA = 4;
 const int M_REFRIGERAR = 6;
-const int M_EXIBIR_TEMPERATURA = 7;
+const int M_AQUECIMENTO=7;
+const int M_EXIBIR_TEMPERATURA = 8;
 
 //Constantes utilizadas na configuração da brassagem e fervura
 const int ETAPA_CONF_TEMP_FERV = 0;
@@ -38,6 +47,7 @@ const int ETAPA_WAIT_CONFIRM_RAMPA=6;
 // Constanstes de configuracao de tempo;
 const int SEC_ALARM_LUPULO = 10;//duração do alarme do lupulo
 const int SEC_ALARM_RAMPA = 10;//duração do alarme de rampa
+const int SEC_ALARM_AQUECIMENTO = 15;//duração do alarme de aquecimento
 const int SEC_ALARM_START_COUNT = 2;//duração do alarme quando inicia o cronometro
 const int SEC_ALARM_WAIT_ENTER = 30;//duração do alarme AGUARDANDO PROSSEGUIR
 
@@ -49,6 +59,7 @@ int var1 = 0;
 int indexTmp = 0;//indice temporario.(utilizado em qualquer rotina)
 int menuSelectTmp;//controle de qual item do menu foi selecionado.
 boolean startTimer;//controle para definir o inicio do timer;
+boolean statusRele1;//controla o status do rele 1
 
 //*************************************************************
 // Estrutura de configuração das etapas de brassagem, fervura e refrigerar
@@ -70,9 +81,14 @@ struct config_refrigerar {
   int rampas[10][2];//[0,0]=temp;[0,1]=durac (horas)
 };
 
+struct config_aquecimento {
+  int temp;
+};
+
 struct config_fervura fervura;
 struct config_brassagem brassagem;
 struct config_refrigerar refrigerar;
+struct config_aquecimento aquecimento;
 
 //*************************************************************
 
@@ -80,21 +96,36 @@ struct config_refrigerar refrigerar;
 void processRefrigerar();
 void processBtPress(int btPress);
 void processBrassagem();
+void processAquecimento();
 void processFervura();
 void zerarDados();
 
 void setup() {
   Serial.begin(9600);
   setupDisplay();
+  
   setupSensors();
   setupBuzzer();
   setupButtons();
+  
+  pinMode(PIN_RELE_1,OUTPUT);
+  pinMode(PIN_LED_BRASSAGEM,OUTPUT);
+  pinMode(PIN_LED_FERVURA,OUTPUT);
+  pinMode(PIN_LED_REFRIGERACAO,OUTPUT);
+  pinMode(PIN_LED_AQUECIMENTO,OUTPUT);
+
+  delay(5000);
   
   zerarDados();
   updateMenuPrincipal(0);
 }
 
 void zerarDados(){
+  digitalWrite(PIN_LED_BRASSAGEM,LOW);
+  digitalWrite(PIN_LED_FERVURA,LOW);
+  digitalWrite(PIN_LED_REFRIGERACAO,LOW);
+  digitalWrite(PIN_LED_AQUECIMENTO,LOW);
+  
   indexTmp=0;
   var1=0;
   menu=M_PRINCIPAL;
@@ -120,6 +151,8 @@ void zerarDados(){
   for (int i = 0 ; i < 10; i++) {
     fervura.lupulo[i] = 0;
   }
+
+  aquecimento.temp = 50;
 }
 
 /** ROTINA LOOP DO PROGRAMA.
@@ -147,27 +180,37 @@ void loop() {
   
   loopBuzzer();
   loopSensors();
-
-  int btPressed = getBtPress();
   
+  int btPressed = getBtPress();
   if (btPressed != -1) {
     processBtPress(btPressed);
   }
-
+  
   //Faz processamento de dados 2x por segundo.
-  if(ups==DELAY||btPressed!=-1){
+  if(ups <= 100 || btPressed!=-1){
     if (M_REFRIGERAR == menu) {
       processRefrigerar();
     } else  if (M_BRASSAGEM == menu) {
       processBrassagem();
     } else if (M_FERVURA == menu) {
       processFervura();
-    } else if(M_EXIBIR_TEMPERATURA == menu){
+    } else if (M_AQUECIMENTO == menu) {
+      processAquecimento();
+    }else if(M_EXIBIR_TEMPERATURA == menu){
       showTemperature(getThermoC());
     }
   }
   
   sec = endLoop();
+}
+
+void processAquecimento(){
+  if(!startTimer && inTemperature(aquecimento.temp)){
+    startTimer=true;
+    alarmAsync(SEC_ALARM_AQUECIMENTO);
+  }
+  updateAquecimento(startTimer, aquecimento.temp,getThermoC());
+  refreshResistencePID(aquecimento.temp);
 }
 
 void processRefrigerar(){  
@@ -341,22 +384,27 @@ void processFervura() {
 /**
    Processamento das acoes dos botões / configuração do programa.
      switch(btPress){
-       case PIN_BT_ENTER:
+       case BT_ENTER:
        break;
-       case PIN_BT_ADD:
+       case BT_ADD:
        break;
-       case PIN_BT_SUB:
+       case BT_SUB:
        break;
      }
 */
 //mudanca de etapa refresh screen; processBtPress(-1);
 void processBtPress(int btPress) {
+  if(BT_RELE_1==btPress){
+    statusRele1=!statusRele1;
+    digitalWrite(PIN_RELE_1,statusRele1?HIGH:LOW);
+    return;
+  }
   switch (menu) {
     /*=============================================*/
     /*=============menu principal==================*/
     case M_PRINCIPAL:
       switch (btPress) {
-        case PIN_BT_ENTER:
+        case BT_ENTER:
           if (0 == indexTmp) {
             etapa = ETAPA_CONF_TEMP_PREAQC_BRASS;
             menu = M_CONF_BRASSAGEM;
@@ -367,20 +415,23 @@ void processBtPress(int btPress) {
           	etapa = ETAPA_CONF_QTD_RAMPAS;
             menu = M_CONF_REFRIGERAR;
           }else if (3 == indexTmp) {
+            etapa = ETAPA_CONF_TEMP_FERV;
+            menu = M_CONF_AQUECIMENTO;
+          }else if (4 == indexTmp) {
             menu = M_EXIBIR_TEMPERATURA;
           }
           menuSelectTmp = menu;
           processBtPress(-1);
           return;
 
-        case PIN_BT_ADD:
-          if(indexTmp>0){
+        case BT_ADD:
+          if(indexTmp > 0){
           	indexTmp--;	
           }
           break;
 
-        case PIN_BT_SUB:
-          if(indexTmp<3){
+        case BT_SUB:
+          if(indexTmp < 4){
           	indexTmp++;
           }
           break;
@@ -389,23 +440,44 @@ void processBtPress(int btPress) {
       break;
      /*=============================================*/
     /*=============menu conf. refrigerar============*/
+    case M_CONF_AQUECIMENTO:
+     if (BT_ENTER==btPress) {
+        menu = M_AQUECIMENTO;
+        digitalWrite(PIN_LED_AQUECIMENTO,HIGH);
+        startTimer=false;
+        processBtPress(-1);
+      } else {
+        int x;
+        if (BT_ADD==btPress) {
+          x = 1;
+        } else if (BT_SUB==btPress) {
+          x = -1;
+        }
+        aquecimento.temp+=x;
+        
+        updateConfAqeucimento(aquecimento.temp);
+      }
+      break;
+         /*=============================================*/
+    /*=============menu conf. refrigerar============*/
     case M_CONF_REFRIGERAR:
-     if (PIN_BT_ENTER==btPress) {
+     if (BT_ENTER==btPress) {
         if (etapa == (refrigerar.qtdRampas * 2)+1) { //quantidade de rampas*2(temp+time) + 0(qtdRampas);
           //Passou da ultima etapa, iniciar processo:
         startTimer=false;
         etapa=ETAPA_RAMPAS;
         indexTmp=0;
           menu = M_REFRIGERAR;
+          digitalWrite(PIN_LED_REFRIGERACAO,HIGH);
         } else {
           etapa++;
         }
         processBtPress(-1);
       } else {
         int x;
-        if (PIN_BT_ADD==btPress) {
+        if (BT_ADD==btPress) {
           x = 1;
-        } else if (PIN_BT_SUB==btPress) {
+        } else if (BT_SUB==btPress) {
           x = -1;
         }
               
@@ -437,7 +509,7 @@ void processBtPress(int btPress) {
     /*=============================================*/
     /*=============menu conf. brassagem============*/
     case M_CONF_BRASSAGEM:
-      if (PIN_BT_ENTER==btPress) {
+      if (BT_ENTER==btPress) {
         if (etapa == (brassagem.qtdRampas * 2 + 1 )) { //quantidade de rampas*2(temp+time) + 1(0-aquec+1-qtdRampas);
           etapa = ETAPA_CONF_TEMP_FERV;
           menu = M_CONF_FERVURA;
@@ -447,9 +519,9 @@ void processBtPress(int btPress) {
         processBtPress(-1);
       } else {
         int x;
-        if (PIN_BT_ADD==btPress) {
+        if (BT_ADD==btPress) {
           x = 1;
-        } else if (PIN_BT_SUB==btPress) {
+        } else if (BT_SUB==btPress) {
           x = -1;
         }
               
@@ -488,13 +560,15 @@ void processBtPress(int btPress) {
     /*=============================================*/
     /*=============menu conf. fervura==============*/
     case M_CONF_FERVURA:
-      if (PIN_BT_ENTER==btPress) {
+      if (BT_ENTER==btPress) {
         if (etapa == (fervura.qtdLupulo + 2 )) { //quantidade de lupulos + 2(0temp+1tempo+2qtd);
           etapa = ETAPA_PREAQUEC;
           if (M_CONF_BRASSAGEM==menuSelectTmp) { //se selecionou no menu conf.Brassagem vai para etapa de brass.
             menu = M_BRASSAGEM;
+            digitalWrite(PIN_LED_BRASSAGEM,HIGH);
           } else { // se selecionou no menu conf.fervura vai direto para ferv.
             menu = M_FERVURA;
+            digitalWrite(PIN_LED_FERVURA,HIGH);
           }
         } else {
           etapa++;
@@ -502,9 +576,9 @@ void processBtPress(int btPress) {
         processBtPress(-1);
       } else {
         int x;
-        if (PIN_BT_ADD==btPress) {
+        if (BT_ADD==btPress) {
           x = 1;
-        } else if (PIN_BT_SUB==btPress) {
+        } else if (BT_SUB==btPress) {
           x = -1;
         }
         if (ETAPA_CONF_TEMP_FERV==etapa) {
@@ -548,10 +622,12 @@ void processBtPress(int btPress) {
     /*=============proc. brassagem=================*/
     case M_BRASSAGEM:
       switch (btPress) {
-        case PIN_BT_ENTER:
+        case BT_ENTER:
           if(ETAPA_WAIT_CONFIRM_FERV==etapa){
             menu=M_FERVURA;
             etapa=ETAPA_PREAQUEC;
+            digitalWrite(PIN_LED_BRASSAGEM,LOW);
+            digitalWrite(PIN_LED_FERVURA,HIGH);
           }else if(ETAPA_WAIT_CONFIRM_RAMPA==etapa){
             etapa=ETAPA_RAMPAS;
           }
@@ -559,10 +635,10 @@ void processBtPress(int btPress) {
           stopAlarm();
           processBtPress(-1);
           break;
-        case PIN_BT_ADD:
-        case PIN_BT_SUB:
+        case BT_ADD:
+        case BT_SUB:
 	        int x = 0;
-	        if(PIN_BT_ADD==btPress){
+	        if(BT_ADD==btPress){
 	        	x = 1;
 	        }else{
 	        	x = -1;
@@ -580,17 +656,17 @@ void processBtPress(int btPress) {
       /*=============proc. fervura===================*/
     case M_FERVURA:
       switch (btPress) {
-        case PIN_BT_ENTER:
+        case BT_ENTER:
           if(ETAPA_WAIT_CONFIRM_END==etapa){
             zerarDados();
           }
           stopAlarm();
           processBtPress(-1);
           break;
-        case PIN_BT_ADD:
-        case PIN_BT_SUB:
+        case BT_ADD:
+        case BT_SUB:
     			int x = 0;
-    			if(PIN_BT_ADD==btPress){
+    			if(BT_ADD==btPress){
     				x = 1;
     			}else{
     				x = -1;
@@ -602,11 +678,35 @@ void processBtPress(int btPress) {
           break;
       }
       break;
+           /*=============================================*/
+      /*=============proc. fervura===================*/
+    case M_AQUECIMENTO:
+      switch (btPress) {
+        case BT_ENTER:
+          stopAlarm();
+          break;
+        case BT_ADD:
+        case BT_SUB:
+          //Define como false para soar o alarme novamente quando chegar a temperatura
+          startTimer=false;
+          
+          int x = 0;
+          if(BT_ADD==btPress){
+            x = 1;
+          }else{
+            x = -1;
+          }
+
+          aquecimento.temp += x;
+          
+          break;
+      }
+      break;
       /*=============================================*/
       /*=============proc. fervura===================*/
     case M_REFRIGERAR:
       switch (btPress) {
-        case PIN_BT_ENTER:
+        case BT_ENTER:
           if(ETAPA_WAIT_CONFIRM_END==etapa){
             zerarDados();
           }else if(ETAPA_RAMPAS==etapa){
@@ -615,10 +715,10 @@ void processBtPress(int btPress) {
           stopAlarm();
           processBtPress(-1);
           break;
-        case PIN_BT_ADD:
-        case PIN_BT_SUB:
+        case BT_ADD:
+        case BT_SUB:
           int x = 0;
-          if(PIN_BT_ADD==btPress){
+          if(BT_ADD==btPress){
             x = 1;
           }else{
             x = -1;
@@ -634,7 +734,7 @@ void processBtPress(int btPress) {
       /*=============proc. exibir temperatura===================*/
     case M_EXIBIR_TEMPERATURA:
       switch (btPress) {
-          case PIN_BT_ENTER:
+          case BT_ENTER:
             zerarDados();
             processBtPress(-1);
           break;
