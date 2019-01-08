@@ -1,7 +1,7 @@
 Projeto para controle/automação do processo de cerveja artesanal.
 
 ### ROTINA LOOP DO PROGRAMA.
-
+``` xml
    1 - BRASSAGEM
    tempo:    |--------Tn--------|------|T rampa 1|------|T rampa 2|  ...
    temp:     0º- > - > - > - > 50º - > 60º------60º - > 70º------70º ...
@@ -18,4 +18,4 @@ Projeto para controle/automação do processo de cerveja artesanal.
    timeline: /-aquecimento ferv-/------/-lup1-/--/-lup2-/-------/-lup3-/-
                                        |         |              |
                                        |->Soa alarme ao iniciar tempo de lupo;
-
+```
