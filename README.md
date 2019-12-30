@@ -1,6 +1,6 @@
 # WG Brew Plus
-
-<img src="images/2017-07-30 17.58.12.jpg"/>
+<p align="center">
+<img src="images/2017-07-30 17.58.12.jpg" width="450"/></p>
 
 Projeto para controle/automação do processo de cerveja artesanal.
 
@@ -35,8 +35,8 @@ O processo de fervura assim como o de brassagem é todo pré configurado, determ
 
 # Board
 
-<img src="images/Screenshot from 2019-12-30 11-34-49.png">
-<img src="images/2017-05-12 22.57.16.jpg"/>
+<img src="images/Screenshot from 2019-12-30 11-34-49.png" width="450">
+<img src="images/2017-05-12 22.57.16.jpg" width="450"/>
 
 # Informações para contato
 
