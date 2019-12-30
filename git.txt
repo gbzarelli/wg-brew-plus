@@ -1,9 +1,0 @@
-
-git clone https://gbzarelli@bitbucket.org/gbzarelli/wg-brew-plus.git 
-cd wg-brew-plus 
-echo "# My project's README" >> README.md 
-git add * 
-git add -u
-git commit -m "Initial commit" 
-git push -u origin master
-
